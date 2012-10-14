@@ -1,0 +1,5 @@
+Experiments with Clojure.  
+
+Working through Structure and Interpretation of Computer Programs (http://mitpress.mit.edu/sicp), roughly translating scheme to clojure.
+
+And Norvig's Paradigms of Artificial Intelligence Programming, in this case translating Common Lisp to Clojure.
