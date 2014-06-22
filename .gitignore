@@ -1,2 +1,5 @@
 .svn/
 lib/
+target/
+*.swp
+.lein-repl-history
