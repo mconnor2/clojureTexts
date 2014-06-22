@@ -257,6 +257,6 @@
   (let [walls (maze-wall-gen (grid w h))
         maze-ops (form-maze-ops w h walls)
         solution (rest (map moves (GPS #{['at start]} [['at end]] maze-ops)))]
-    ;(println solution)
+    (println solution)
     (draw w h walls solution)))
 

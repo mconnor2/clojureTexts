@@ -34,6 +34,7 @@
   ([pattern input] (pat-match pattern input '{}))
   ([pattern input bindings]
     ;(println "PAT-MATCH " pattern " = " input)
+    (loop [pattern pattern input input bindings bindings]
     (cond 
       (nil? bindings) nil
       (variable? pattern)
@@ -46,10 +47,10 @@
       (single-pattern? pattern)
         (single-matcher pattern input bindings)
       (and (seq? pattern) (seq? input))
-        (pat-match (rest pattern) (rest input)
+        (recur (rest pattern) (rest input)
                    (pat-match (first pattern) (first input)
                               bindings))
-      :else nil)))
+      :else nil))))
 
 (defn match-partitions
   "Returns lazy sequence of possible partitions of list:

@@ -131,15 +131,33 @@
         (println (str/join " " (flatten response)))
         (recur)))))
 
+(defn rule-based-translator
+  "Find the first rule in rules that matches input.
+  and apply the action to that rule."
+  [input rules & {:keys [matcher rule-if rule-then action]
+                  :or {matcher #'pat-match
+                       rule-if #'rule-pattern
+                       rule-then #'rule-response
+                       action #'replace}}]
+  (some (fn [rule]
+          (println "Checking " rule)
+          (if-let [result (matcher (rule-if rule) input)]
+            (action result (rule-then rule))))
+        rules))
+
 (defn use-eliza-rules
   "Find some rule with which to transform the input.
    Returns nil if input is 'quit'"
   [input]
   (if-not (quit? input)
-    (some (fn [rule]
-            ;(println "Match: " input " => " (first rule))
-            ;(println (list 'pat-match (first rule) input) " => "
-            ;          (pat-match (first rule) input))
-            (if-let [result (pat-match (rule-pattern rule) input)]
-              (replace result (rand-nth (rule-response rule)))))
-          *eliza-rules*)))
+    (rule-based-translator input *eliza-rules*
+      :action (fn [bindings response]
+                (replace bindings (rand-nth response))))))
+
+;    (some (fn [rule]
+;            ;(println "Match: " input " => " (first rule))
+;            ;(println (list 'pat-match (first rule) input) " => "
+;            ;          (pat-match (first rule) input))
+;            (if-let [result (pat-match (rule-pattern rule) input)]
+;              (replace result (rand-nth (rule-response rule)))))
+;          *eliza-rules*)))
