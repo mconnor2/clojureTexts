@@ -3,7 +3,7 @@
                      [pprint :as pprint]
                      [string :as str]))
   (:use (paip [chap5 :only (rule-based-translator) :as chap5]
-              [chap6 :only (pat-match) :as chap6])))
+              [re :only (pat-match) :as re])))
 
 
 (defn mkrule ([pattern response]
@@ -12,7 +12,7 @@
   {:pattern (first rule) :response (second rule)}))
 
 (defn mkexp [lhs op rhs] (list op lhs rhs))
-(defn exp? [x] (list? x))
+(defn exp? [x] (seq? x))
 (defn exp-args [x] (rest x))
 (defn exp-op [x] (first x))
 (defn exp-lhs [x] (second x))
@@ -67,7 +67,7 @@
     ((?x* per ?y*)        (/ ?x ?y))
     ((?x* divided by ?y*) (/ ?x ?y))
     ((half ?x*)           (/ ?x 2))
-    ((on half ?x*)        (/ ?x 2))
+    ((one half ?x*)       (/ ?x 2))
     ((twice ?x*)          (* ?x 2))
     ((square ?x*)         (* ?x ?x))
     ((?x* % less than ?y*) (* ?y (/ (- 100 ?x) 100)))
@@ -93,9 +93,14 @@
                              :rule-then :response
                              :matcher pat-match
                              :action (fn [bindings response]
-                                       (println "Response: " response)
-                                       (replace (translate-pair bindings)
-                                                response)))
+                    ;                   (println "Bindings:" bindings)
+                    ;                   (println "Response:" response)
+                                       (let [bindings (translate-pair bindings)
+                                             result (walk/prewalk-replace 
+                                                     bindings response)]
+                                         ;(println "Translate Bindings:" bindings)
+                                         ;(println "Result:" result)
+                                         result)))
       (make-variable words)))
 
 (defn map-map-vals
@@ -106,15 +111,14 @@
 (defn translate-pair 
   "Translate the value part of binding into an equation or expression"
   [bindings]
-  (println "Bindings: " bindings)
   (map-map-vals translate-to-expression bindings))
 
 (defn create-list-of-equations
   "Seperate out equations embedded in nested parens."
   [exp]
-  (cond (nil? exp) nil
+  (cond (or (empty? exp) (nil? exp)) exp
         (symbol? (first exp)) (list exp)
-        :default (conj (create-list-of-equations (first exp))
+        :default (concat (create-list-of-equations (first exp))
                          (create-list-of-equations (rest exp)))))
 
 (defn make-variable
@@ -142,8 +146,9 @@
   ; the others.  If that doesn't work, return what is known.
   ([equations] (solve equations '()))
   ([equations known]
-   (println "Equations =" equations "known =" known)
+   ;(println "Equations =" equations "known =" known)
     (or (some (fn [equation]
+                ;(println "Checking" equation)
                 (if-let [x (one-unknown equation)]
                   (let [answer (solve-arithmetic (isolate equation x))]
                     (solve (walk/prewalk-replace 
@@ -153,10 +158,12 @@
               equations)
         known)))
 
+(declare in-exp inverse-op commutative?)
+
 (defn isolate
   "Isolate the lone x in e on the left-hand side of e."
   [e x]
-  (println "Isolating" x "from" e)
+  ;(println "Isolating" x "from" e)
   (cond (= (exp-lhs e) x) 
           e
         (in-exp x (exp-rhs e))
